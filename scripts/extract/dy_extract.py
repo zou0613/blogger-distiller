@@ -312,34 +312,40 @@ def main():
         die(f"缺少提取脚本: {EXTRACT}")
 
     dy_dl, dy_scripts = load_dy_module()
+    _launched_headless = not dy_dl._browser_alive(CDP_DEFAULT)
     ensure_browser(dy_dl, CDP_DEFAULT)
-    aweme_id = resolve_aweme_id(dy_dl, args.url)
-    outdir = args.outdir or os.path.join(os.getcwd(), f"dy_{aweme_id}_extract_{time.strftime('%Y%m%d_%H%M%S')}")
-    os.makedirs(outdir, exist_ok=True)
+    try:
+        aweme_id = resolve_aweme_id(dy_dl, args.url)
+        outdir = args.outdir or os.path.join(os.getcwd(), f"dy_{aweme_id}_extract_{time.strftime('%Y%m%d_%H%M%S')}")
+        os.makedirs(outdir, exist_ok=True)
 
-    chosen = None
-    if not args.force_download:
-        log(f"解析到 aweme_id={aweme_id}，获取合并 MP4 直链候选 ...")
-        try:
-            candidates = asyncio.run(fetch_detail_candidates(CDP_DEFAULT, aweme_id))
-        except Exception as e:
-            candidates = []
-            log(f"取直链异常: {e}")
-        if candidates:
-            chosen = choose_direct_url(candidates)
+        chosen = None
+        if not args.force_download:
+            log(f"解析到 aweme_id={aweme_id}，获取合并 MP4 直链候选 ...")
+            try:
+                candidates = asyncio.run(fetch_detail_candidates(CDP_DEFAULT, aweme_id))
+            except Exception as e:
+                candidates = []
+                log(f"取直链异常: {e}")
+            if candidates:
+                chosen = choose_direct_url(candidates)
 
-    direct_ok = False
-    if chosen:
-        direct_ok = run_direct(chosen, outdir, model=args.model)
-    elif not args.force_download:
-        log("无可用直链（或已 --force-download），转入回退路径")
+        direct_ok = False
+        if chosen:
+            direct_ok = run_direct(chosen, outdir, model=args.model)
+        elif not args.force_download:
+            log("无可用直链（或已 --force-download），转入回退路径")
 
-    if not direct_ok:
-        if not run_fallback(dy_dl, args.url, aweme_id, outdir,
-                            fps=args.fps, model=args.model, dy_scripts=dy_scripts):
-            die("全部路径均失败")
-    log(f"完成 ✓ 报告目录: {outdir}")
-    return 0
+        if not direct_ok:
+            if not run_fallback(dy_dl, args.url, aweme_id, outdir,
+                                fps=args.fps, model=args.model, dy_scripts=dy_scripts):
+                die("全部路径均失败")
+        log(f"完成 ✓ 报告目录: {outdir}")
+        return 0
+    finally:
+        # 回收本脚本启动的 headless Chrome，防止残留进程占用 9222 并卡住用户正常 Chrome
+        if _launched_headless:
+            dy_dl._kill_headless_profile(TMP_PROFILE)
 
 
 if __name__ == "__main__":

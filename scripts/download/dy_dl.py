@@ -104,6 +104,29 @@ def _kill_port_listener(port: int):
         except ProcessLookupError: pass
 
 
+def _kill_headless_profile(profile_copy: str):
+    """结束由本工具启动的 headless Chrome（按 --user-data-dir 特征精准匹配）。
+
+    只杀目标 profile（默认 /tmp/dy-profile）的实例，绝不影响用户正常 Chrome。
+    脚本退出时必须回收自己启动的 headless，否则残留进程会占用 9222 端口，
+    甚至导致用户无法正常打开/弹出 Chrome 窗口（实测踩坑）。
+    """
+    if platform.system() != "Darwin":
+        return
+    try:
+        # 注意：pattern 不能以 "--" 开头，否则 macOS pgrep 会当成选项解析报
+        # "illegal option -- -"，导致回收失效、headless 残留卡住用户 Chrome。
+        # 去掉前导 --（-f 为子串匹配），仍能命中命令行里的 --user-data-dir=...
+        out = subprocess.check_output(
+            ["pgrep", "-f", f"user-data-dir={profile_copy}"]
+        ).decode().strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return
+    for pid in out.splitlines():
+        try: os.kill(int(pid), signal.SIGKILL)
+        except (ProcessLookupError, ValueError): pass
+
+
 def _ensure_profile_copy(src_dir: str, copy_dir: str):
     """Chromium 强制要求 --user-data-dir 指向非默认目录：复制一份过去。"""
     default_dir = os.path.join(src_dir, "Default")
@@ -363,50 +386,57 @@ def main():
                     help="禁用无头模式，改用 GUI Chrome（需要本机有 GUI）")
     args = ap.parse_args()
 
-    if not _browser_alive(args.cdp):
-        if not args.auto_launch:
-            sys.exit(f"✗ CDP 端点 {args.cdp} 无响应；可用 --auto-launch 自动启动浏览器")
-        print("→ 启动浏览器...", flush=True)
-        _start_browser(args.chrome_bin, args.user_data_dir, args.profile_copy,
-                       args.cdp_port, args.app_name, headless=args.headless)
-        # 重定向后续 CDP 调用到正确端口
-        if args.cdp == DEFAULT_CDP:
-            args.cdp = f"http://127.0.0.1:{args.cdp_port}"
+    launched_headless = False
+    try:
         if not _browser_alive(args.cdp):
-            sys.exit("✗ 浏览器已启动但 CDP 仍不可达")
+            if not args.auto_launch:
+                sys.exit(f"✗ CDP 端点 {args.cdp} 无响应；可用 --auto-launch 自动启动浏览器")
+            print("→ 启动浏览器...", flush=True)
+            _start_browser(args.chrome_bin, args.user_data_dir, args.profile_copy,
+                           args.cdp_port, args.app_name, headless=args.headless)
+            launched_headless = bool(args.headless)
+            # 重定向后续 CDP 调用到正确端口
+            if args.cdp == DEFAULT_CDP:
+                args.cdp = f"http://127.0.0.1:{args.cdp_port}"
+            if not _browser_alive(args.cdp):
+                sys.exit("✗ 浏览器已启动但 CDP 仍不可达")
 
-    print(f"→ CDP {args.cdp} 抓取视频流...", flush=True)
-    video, audio = asyncio.run(_capture_video_urls(args.cdp, args.url, timeout=args.timeout))
-    if not video:
-        sys.exit("✗ 未能拦截到视频流（页面可能未登录或视频受限）")
-    print(f"  video: {video[:90]}...", flush=True)
-    if audio:
-        print(f"  audio: {audio[:90]}...", flush=True)
+        print(f"→ CDP {args.cdp} 抓取视频流...", flush=True)
+        video, audio = asyncio.run(_capture_video_urls(args.cdp, args.url, timeout=args.timeout))
+        if not video:
+            sys.exit("✗ 未能拦截到视频流（页面可能未登录或视频受限）")
+        print(f"  video: {video[:90]}...", flush=True)
+        if audio:
+            print(f"  audio: {audio[:90]}...", flush=True)
 
-    title = _safe_title(args.url)
-    out_dir = os.path.expanduser("~/Documents/自媒体/downloads")
-    os.makedirs(out_dir, exist_ok=True)
-    out_path = args.output or os.path.join(out_dir, f"{title}.mp4")
-    if not out_path.endswith(".mp4"):
-        out_path += ".mp4"
+        title = _safe_title(args.url)
+        out_dir = os.path.expanduser("~/Documents/自媒体/downloads")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = args.output or os.path.join(out_dir, f"{title}.mp4")
+        if not out_path.endswith(".mp4"):
+            out_path += ".mp4"
 
-    tmp_v = out_path + ".video.m4s"
-    tmp_a = out_path + ".audio.m4s"
-    print("→ 下载...", flush=True)
-    _download(video, tmp_v)
-    if audio:
-        _download(audio, tmp_a)
-    print("→ 合并...", flush=True)
-    _merge(tmp_v, tmp_a if audio else tmp_v, out_path)
-    for p in (tmp_v, tmp_a):
-        try: os.remove(p)
-        except OSError: pass
-    if not _has_video_stream(out_path):
-        try: os.remove(out_path)
-        except OSError: pass
-        sys.exit("✗ 下载结果只有音轨（视频流为空）——拦截到的视频 URL 无效，"
-                 "请重试；仍失败则改用「登录态 detail API」路径")
-    print(f"✓ 完成：{out_path}  ({os.path.getsize(out_path)/1024/1024:.1f} MB)")
+        tmp_v = out_path + ".video.m4s"
+        tmp_a = out_path + ".audio.m4s"
+        print("→ 下载...", flush=True)
+        _download(video, tmp_v)
+        if audio:
+            _download(audio, tmp_a)
+        print("→ 合并...", flush=True)
+        _merge(tmp_v, tmp_a if audio else tmp_v, out_path)
+        for p in (tmp_v, tmp_a):
+            try: os.remove(p)
+            except OSError: pass
+        if not _has_video_stream(out_path):
+            try: os.remove(out_path)
+            except OSError: pass
+            sys.exit("✗ 下载结果只有音轨（视频流为空）——拦截到的视频 URL 无效，"
+                     "请重试；仍失败则改用「登录态 detail API」路径")
+        print(f"✓ 完成：{out_path}  ({os.path.getsize(out_path)/1024/1024:.1f} MB)")
+    finally:
+        # 回收本次启动的 headless Chrome，防止残留进程占用 9222 并卡住用户正常 Chrome
+        if launched_headless:
+            _kill_headless_profile(args.profile_copy)
 
 
 if __name__ == "__main__":
