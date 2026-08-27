@@ -43,8 +43,7 @@ brew install ffmpeg          # macOS
 export ARK_API_KEY=<你的 Key>   # https://console.volcengine.com/ark 获取
 ```
 
-<details>
-<summary><b>输入要求与说明</b></summary>
+## 输入要求与说明
 
 | 项目 | 说明 |
 |---|---|
@@ -53,8 +52,6 @@ export ARK_API_KEY=<你的 Key>   # https://console.volcengine.com/ark 获取
 | 批量规模 | 建议按最高点赞量排序，提取前 5~10 个作品来分析 |
 | 输出位置 | 运行产物统一落在一个独立目录 `distilled/<博主名>_<日期>/`，蒸馏报告在根级 |
 | 网络建议 | 建议在**境内家庭/办公网络**下使用：海外或数据中心 IP 会显著提高抖音风控概率 |
-
-</details>
 
 ## 目录结构
 
