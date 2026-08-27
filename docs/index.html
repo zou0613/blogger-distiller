@@ -7,258 +7,243 @@
 <meta name="description" content="抖音博主打法逆向工具：抓取爆款视频，逐条拆解为带时间戳的信息档案，交叉蒸馏出拍片行动包。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;900&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@600;700;900&family=Noto+Sans+SC:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
 <style>
 :root{
-  --ink:#0b0d10; --panel:#12151a; --panel2:#161a20; --line:#242a33;
-  --amber:#e8a33d; --amber-dim:#8a6524; --teal:#3fb8af;
-  --text:#d8dbe1; --dim:#8b93a0; --bright:#f4f6f9;
+  --paper:#f5f0e6; --paper2:#fbf8f1; --card:#fffdf7;
+  --ink:#1b1812; --ink2:#57503f; --mut:#98907f;
+  --red:#bf3d1c; --red-soft:#eadbcf;
+  --line:rgba(27,24,18,.13); --line-strong:rgba(27,24,18,.28);
   --serif:"Noto Serif SC",serif; --sans:"Noto Sans SC",sans-serif; --mono:"JetBrains Mono",monospace;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
-body{background:var(--ink);color:var(--text);font-family:var(--sans);font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased}
-::selection{background:var(--amber);color:#000}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.8;font-size:16px;-webkit-font-smoothing:antialiased}
+::selection{background:var(--red);color:#fff}
 
-/* 噪点 + 扫描线氛围 */
-body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:9;opacity:.05;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");}
-body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:8;opacity:.04;
-  background:repeating-linear-gradient(0deg,transparent 0 2px,#fff 2px 3px);}
+/* 进度细线 */
+#prog{position:fixed;top:0;left:0;height:2px;width:0;background:var(--red);z-index:99}
 
-.wrap{max-width:1080px;margin:0 auto;padding:0 28px}
+/* 纸面颗粒 */
+body::before{content:"";position:fixed;inset:0;z-index:9;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .40 0 0 0 0 .32 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23p)'/%3E%3C/svg%3E");}
+
+.wrap{max-width:1060px;margin:0 auto;padding:0 30px}
 .mono{font-family:var(--mono)}
-.amber{color:var(--amber)} .teal{color:var(--teal)}
 
-/* ---- 顶部控制条 ---- */
-.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;
-  padding:14px 28px;border-bottom:1px solid var(--line);
-  font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.08em}
-.topbar .rec{color:#e05555}
-.topbar .rec::before{content:"● ";animation:blink 1.6s steps(2) infinite}
-@keyframes blink{50%{opacity:.15}}
+/* ---- 顶栏 ---- */
+header.top{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--paper) 88%,transparent);
+  backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.top-in{max-width:1060px;margin:0 auto;padding:16px 30px;display:flex;align-items:center;gap:18px}
+.seal{width:38px;height:38px;background:var(--red);color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-weight:900;font-size:20px;line-height:1;box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);transition:transform .3s}
+.seal:hover{transform:rotate(-6deg)}
+.top-name{font-family:var(--serif);font-weight:700;font-size:17px;letter-spacing:.06em}
+.top-nav{margin-left:auto;display:flex;gap:22px;font-size:13.5px;color:var(--ink2)}
+.top-nav a{color:inherit;text-decoration:none;position:relative}
+.top-nav a::after{content:"";position:absolute;left:0;bottom:-3px;width:100%;height:1.5px;background:var(--red);transform:scaleX(0);transform-origin:right;transition:transform .28s}
+.top-nav a:hover::after{transform:scaleX(1);transform-origin:left}
+.top-gh{font-family:var(--mono);font-size:12.5px;border:1px solid var(--line-strong);padding:5px 14px;border-radius:99px;text-decoration:none;color:var(--ink)}
+.top-gh:hover{background:var(--ink);color:var(--paper);transition:.25s}
 
 /* ---- HERO ---- */
-.hero{padding:110px 0 90px;text-align:left;position:relative;overflow:hidden}
-.hero::before{content:"";position:absolute;top:-140px;right:-120px;width:520px;height:520px;border-radius:50%;
-  background:radial-gradient(circle,rgba(232,163,61,.13),transparent 62%);pointer-events:none}
-.kicker{font-family:var(--mono);font-size:12px;color:var(--teal);letter-spacing:.35em;margin-bottom:26px}
-h1{font-family:var(--serif);font-weight:900;font-size:clamp(46px,8vw,92px);line-height:1.08;color:var(--bright);letter-spacing:.02em}
-.en-name{font-family:var(--mono);color:var(--dim);letter-spacing:.55em;font-size:13px;margin-top:18px;text-transform:uppercase}
-.def{max-width:640px;margin-top:34px;font-size:19px;color:var(--text)}
-.def b{color:var(--amber);font-weight:700}
-.io-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:40px}
-.chip{font-family:var(--mono);font-size:12.5px;padding:8px 16px;border:1px solid var(--line);border-radius:99px;background:rgba(255,255,255,.025);color:var(--dim)}
-.chip b{color:var(--text);font-weight:600}
-.chip.in{border-color:var(--teal)} .chip.out{border-color:var(--amber)}
+.hero{position:relative;padding:96px 30px 90px;overflow:hidden}
+.hero-mark{position:absolute;right:-60px;top:50%;transform:translateY(-52%);font-family:var(--serif);font-weight:900;
+  font-size:min(430px,58vw);line-height:1;color:transparent;-webkit-text-stroke:1px rgba(27,24,18,.07);pointer-events:none;user-select:none}
+.kick{display:inline-flex;align-items:center;gap:12px;font-family:var(--mono);font-size:11.5px;letter-spacing:.42em;color:var(--red);margin-bottom:34px}
+.kick::before{content:"";width:34px;height:1px;background:var(--red)}
+h1{font-family:var(--serif);font-weight:900;font-size:clamp(52px,9vw,104px);line-height:1.06;letter-spacing:.02em;color:var(--ink)}
+h1 em{font-style:normal;color:var(--red);padding-bottom:.06em;
+  background:linear-gradient(var(--red),var(--red)) left bottom/100% .10em no-repeat}
+.sub-en{font-family:var(--mono);font-size:12.5px;letter-spacing:.6em;color:var(--mut);text-transform:uppercase;margin-top:22px}
+.lede{max-width:600px;margin-top:36px;font-size:18.5px;color:var(--ink2)}
+.io{display:flex;flex-wrap:wrap;gap:0 28px;margin-top:44px;padding-top:26px;border-top:1px solid var(--line)}
+.io div{font-size:14px;display:flex;align-items:center;gap:9px;padding:6px 0}
+.io .k{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--red)}
+.io .v b{font-weight:600}
+.io .dotr{width:6px;height:6px;background:var(--red);border-radius:50%}
 
-/* ---- 分区通用 ---- */
-section{padding:84px 0;border-top:1px solid var(--line)}
-.sec-tag{font-family:var(--mono);font-size:12px;color:var(--amber);letter-spacing:.3em;display:flex;align-items:center;gap:14px;margin-bottom:34px}
-.sec-tag::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--amber-dim),transparent)}
-h2{font-family:var(--serif);font-weight:900;font-size:clamp(26px,3.6vw,36px);color:var(--bright);margin-bottom:30px}
+/* ---- 章节 ---- */
+section{padding:86px 30px}
+.sec-head{display:flex;align-items:baseline;gap:20px;margin-bottom:48px;border-bottom:2px solid var(--ink);padding-bottom:18px}
+.sec-no{font-family:var(--mono);font-size:13px;color:var(--red)}
+.sec-title{font-family:var(--serif);font-weight:900;font-size:clamp(28px,4vw,40px)}
+.sec-note{margin-left:auto;font-family:var(--mono);font-size:11.5px;color:var(--mut);letter-spacing:.14em}
 
 /* ---- 流水线 ---- */
-.lane{display:flex;align-items:stretch;gap:0;margin-bottom:22px}
-.node{background:var(--panel);border:1px solid var(--line);border-top:2px solid var(--amber-dim);border-radius:10px;
-  padding:16px 20px;min-width:150px;transition:border-color .25s,transform .25s}
-.node:hover{transform:translateY(-3px);border-top-color:var(--amber)}
-.node .t{font-family:var(--mono);font-size:11px;color:var(--amber);letter-spacing:.15em;margin-bottom:6px}
-.node .d{font-size:13.5px;color:var(--text);line-height:1.55}
-.arrow{display:flex;align-items:center;padding:0 14px;color:var(--amber);font-family:var(--mono);opacity:.75}
-.merge-down{height:56px;position:relative}
-.merge-down::before{content:"│";position:absolute;left:50%;top:-4px;color:var(--amber-dim);font-family:var(--mono);font-size:20px;line-height:1;animation:drip 2.2s ease-in-out infinite}
-@keyframes drip{50%{transform:translateY(8px);opacity:.45}}
-.stage-bar{display:flex;align-items:center;gap:22px;background:linear-gradient(90deg,rgba(63,184,175,.08),rgba(232,163,61,.07));
-  border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:10px;padding:20px 26px}
-.stage-bar .node-inline{white-space:nowrap}
-.out-file{margin-left:auto;font-family:var(--mono);font-size:13px;color:var(--amber);border:1px dashed var(--amber-dim);padding:8px 18px;border-radius:8px;white-space:nowrap}
+.steps{counter-reset:s;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px}
+.step{background:var(--card);border:1px solid var(--line);padding:26px 24px 24px;position:relative;transition:transform .3s,box-shadow .3s}
+.step:hover{transform:translateY(-6px);box-shadow:0 18px 40px -18px rgba(27,24,18,.35)}
+.step::before{counter-increment:s;content:"0" counter(s);position:absolute;top:-17px;left:22px;
+  font-family:var(--mono);font-size:12px;background:var(--red);color:#fff;padding:4px 10px;letter-spacing:.15em}
+.step h3{font-family:var(--serif);font-weight:700;font-size:21px;margin:6px 0 12px}
+.step p{font-size:13.5px;color:var(--ink2)}
+.step .io2{margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--mut);word-break:break-all;line-height:1.9}
+.pipe-note{margin-top:30px;padding:18px 22px;background:var(--red-soft);border-left:3px solid var(--red);
+  font-size:14px;color:var(--ink);max-width:720px}
+.pipe-note b{color:var(--red)}
 
 /* ---- 报告构成 ---- */
-.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px;position:relative;overflow:hidden;transition:transform .25s,border-color .25s}
-.card:hover{transform:translateY(-4px);border-color:var(--amber-dim)}
-.card .no{position:absolute;top:-14px;right:6px;font-family:var(--mono);font-size:74px;color:rgba(255,255,255,.045);font-weight:600}
-.card h3{font-family:var(--serif);font-size:20px;color:var(--bright);margin-bottom:12px}
-.card p{font-size:14.5px;color:var(--dim)}
-.card .src{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--teal);letter-spacing:.06em}
+.rpt{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:0;background:var(--card);border:1px solid var(--line)}
+.rpt>div{padding:30px 28px;border-left:1px solid var(--line)}
+.rpt>div:first-child{border-left:none}
+.rpt .tag{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--red);margin-bottom:14px}
+.rpt h3{font-family:var(--serif);font-weight:700;font-size:20px;margin-bottom:10px}
+.rpt p{font-size:13.5px;color:var(--ink2)}
+.rpt .from{display:block;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--mut);padding-top:12px;border-top:1px dashed var(--line)}
+@media(max-width:760px){.rpt>div{border-left:none;border-top:1px solid var(--line)}.rpt>div:first-child{border-top:none}}
 
-/* ---- 终端 ---- */
-.term{background:#0e1116;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.45)}
-.term-bar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--panel2);border-bottom:1px solid var(--line)}
-.dot{width:11px;height:11px;border-radius:50%}
-.dot:nth-child(1){background:#ff5f57}.dot:nth-child(2){background:#febc2e}.dot:nth-child(3){background:#28c840}
-.term-bar .ttl{margin-left:10px;font-family:var(--mono);font-size:11.5px;color:var(--dim)}
-.term-body{padding:22px 24px;font-family:var(--mono);font-size:13.5px;line-height:2;overflow-x:auto}
-.term-body .cm{color:var(--dim)} .term-body .pr{color:var(--teal)} .term-body .ok{color:#68d391}
-.term-body .hl{color:var(--amber)}
-
-/* ---- 树 ---- */
-.tree{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:26px 30px;
-  font-family:var(--mono);font-size:13.5px;line-height:2;color:var(--dim);overflow-x:auto}
-.tree b{color:var(--text);font-weight:400} .tree .cmt{color:var(--amber-dim)}
+/* ---- 快速开始 ---- */
+.qs-grid{display:grid;grid-template-columns:1fr auto;gap:34px;align-items:start}
+@media(max-width:860px){.qs-grid{grid-template-columns:1fr}}
+.codeblock{background:#211c15;border-radius:10px;padding:24px 26px;box-shadow:0 24px 50px -24px rgba(27,24,18,.55);overflow-x:auto}
+.codeblock pre{font-family:var(--mono);font-size:13.5px;line-height:2.1;color:#ede4d3}
+.codeblock .cm{color:#9a8f7c}.codeblock .kw{color:#e8a33d}.codeblock .st{color:#7fc8a9}
+.side-list{min-width:290px}
+.side-list li{list-style:none;display:flex;gap:12px;padding:15px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink2)}
+.side-list li:last-child{border-bottom:none}
+.side-list .n{font-family:var(--mono);font-size:12px;color:var(--red);padding-top:2px}
 
 /* ---- 红线 ---- */
-.redgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}
-.red{border:1px solid var(--line);border-left:3px solid #e05555;border-radius:10px;padding:20px;background:var(--panel)}
-.red .no2{font-family:var(--mono);font-size:11px;color:#e05555;letter-spacing:.2em;margin-bottom:10px}
-.red h4{font-size:15.5px;color:var(--bright);margin-bottom:6px;font-weight:700}
-.red p{font-size:13px;color:var(--dim)}
+.guards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:20px}
+.guard{--c:var(--red);border:1px solid var(--line-strong);outline:1px solid var(--line);outline-offset:5px;padding:24px;background:var(--card);transition:.3s}
+.guard:hover{transform:translateY(-4px)}
+.guard .gno{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--red);border:1px solid var(--red);padding:3px 10px;letter-spacing:.2em;margin-bottom:16px;transform:rotate(-2deg)}
+.guard h4{font-family:var(--serif);font-size:19px;margin-bottom:8px}
+.guard p{font-size:13.5px;color:var(--ink2)}
 
 /* ---- 页脚 ---- */
-footer{border-top:1px solid var(--line);padding:44px 28px;text-align:center;color:var(--dim);
-  font-family:var(--mono);font-size:12.5px;letter-spacing:.05em}
-footer a{color:var(--amber);text-decoration:none;border-bottom:1px dashed transparent;transition:border-color .2s}
-footer a:hover{border-bottom-color:var(--amber)}
+footer{border-top:2px solid var(--ink);margin-top:40px}
+.foot-in{max-width:1060px;margin:0 auto;padding:38px 30px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:12.5px;color:var(--mut)}
+.foot-in a{color:var(--ink);text-decoration:none;border-bottom:1px solid var(--line-strong)}
+.foot-in a:hover{color:var(--red);border-color:var(--red)}
 
 /* ---- 动效 ---- */
-.reveal{opacity:0;transform:translateY(26px);animation:up .8s cubic-bezier(.2,.7,.2,1) forwards}
-.reveal.d1{animation-delay:.08s}.reveal.d2{animation-delay:.18s}.reveal.d3{animation-delay:.3s}.reveal.d4{animation-delay:.42s}.reveal.d5{animation-delay:.55s}
+.reveal{opacity:0;transform:translateY(28px);animation:up .85s cubic-bezier(.2,.65,.2,1) forwards}
+.d1{animation-delay:.1s}.d2{animation-delay:.22s}.d3{animation-delay:.36s}.d4{animation-delay:.5s}
 @keyframes up{to{opacity:1;transform:none}}
-.js .sc{opacity:0;transform:translateY(26px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1)}
+.js .sc{opacity:0;transform:translateY(28px);transition:.75s cubic-bezier(.2,.65,.2,1)}
 .js .sc.on{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){
-  .reveal,.js .sc{opacity:1!important;transform:none!important;animation:none!important;transition:none!important}
-  html{scroll-behavior:auto}
+@media(prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important}
+  .reveal,.js .sc{opacity:1!important;transform:none!important}
 }
 @media(max-width:720px){
-  .lane{flex-direction:column;gap:10px} .arrow{padding:2px 0;transform:rotate(90deg);justify-content:center}
-  .out-file{margin:14px 0 0;display:inline-block}
-  .stage-bar{flex-direction:column;align-items:flex-start;gap:14px}
-  .hero{padding:70px 0 60px}
+  .hero{padding:66px 30px} .top-nav{display:none}
 }
 </style>
 </head>
 <body>
+<div id="prog"></div>
 
-<div class="topbar">
-  <span class="rec">EXTRACTING</span>
-  <span class="mono">input.guarded · no cookie · read-only</span>
-  <span id="clock">--:--:--</span>
-</div>
-
-<header class="wrap hero">
-  <div class="kicker reveal d1">// DOUYIN CREATOR REVERSE PIPELINE</div>
-  <h1 class="reveal d2">博主<span class="amber">蒸馏器</span></h1>
-  <div class="en-name reveal d3">blogger-distiller</div>
-  <p class="def reveal d4">抖音博主打法逆向工具：抓取指定博主的爆款视频，用<b>豆包视觉模型</b>逐条拆解为带时间戳的信息档案，交叉蒸馏出《蒸馏报告》——对方的商业打法 + 一份可直接照做的拍片行动包。</p>
-  <div class="io-row reveal d5">
-    <span class="chip in">输入 ▸ <b>博主主页链接</b>（批量 Top N）</span>
-    <span class="chip in">输入 ▸ <b>单条视频分享链接</b></span>
-    <span class="chip out">输出 ▸ <b>distill_report.md</b></span>
+<header class="top">
+  <div class="top-in">
+    <div class="seal">蒸</div>
+    <span class="top-name">博主蒸馏器</span>
+    <nav class="top-nav">
+      <a href="#pipeline">流水线</a><a href="#report">报告构成</a><a href="#quickstart">快速开始</a><a href="#guards">安全红线</a>
+    </nav>
+    <a class="top-gh" href="https://github.com/zou0613/blogger-distiller">GitHub ↗</a>
   </div>
 </header>
 
-<main class="wrap">
-
-<section id="pipeline">
-  <div class="sec-tag sc">01 / PIPELINE</div>
-  <h2 class="sc">流水线</h2>
-
-  <div class="lane sc">
-    <div class="node"><div class="t">INPUT · A</div><div class="d">博主主页链接<br><span class="mono" style="font-size:11px;color:var(--dim)">douyin.com/user/&lt;sec_uid&gt;</span></div></div>
-    <div class="arrow">──▶</div>
-    <div class="node"><div class="t">收片</div><div class="d">全量作品元数据抓取<br>批量下载 Top N · ffprobe 质检<br>失败修复 · 大文件压缩闭环</div></div>
-    <div class="arrow">──▶</div>
-    <div class="node"><div class="t">ASSETS</div><div class="d">videos/*.mp4<br>+ meta.json（点赞/评论/收藏）</div></div>
-  </div>
-
-  <div class="lane sc">
-    <div class="node"><div class="t">INPUT · B</div><div class="d">单条视频分享链接<br><span class="mono" style="font-size:11px;color:var(--dim)">v.douyin.com/xxx</span></div></div>
-    <div class="arrow">──▶</div>
-    <div class="node"><div class="t">直传拆片</div><div class="d">签名直链多候选探针择优<br>直接交给方舟拉流 · 本地不落盘<br>探针失败自动回退下载上传</div></div>
-    <div class="arrow">──▶</div>
-    <div class="node"><div class="t">ASSETS</div><div class="d">单条信息档案 .md</div></div>
-  </div>
-
-  <div class="merge-down sc"></div>
-
-  <div class="stage-bar sc">
-    <div class="node-inline"><span class="mono amber" style="font-size:11px;letter-spacing:.15em">蒸馏 / CROSS-DISTILL</span></div>
-    <div style="font-size:14px;color:var(--text)">豆包视觉模型 × 每条 ≥131k 输出预算 · 只提取不分析 · 证据分级到帧 · 跨档案交叉比对生成三部分报告</div>
-    <div class="out-file">▶ distill_report.md</div>
-  </div>
-</section>
-
-<section id="report">
-  <div class="sec-tag sc">02 / DISTILL_REPORT.MD</div>
-  <h2 class="sc">《蒸馏报告》的构成</h2>
-  <div class="grid3">
-    <div class="card sc"><div class="no">01</div><h3>事实基础</h3><p>各条视频的信息档案要点与 meta.json 的互动数据——发布时间、点赞、评论、收藏。</p><div class="src">SOURCE: 真实模型提取结果</div></div>
-    <div class="card sc"><div class="no">02</div><h3>跨档案对比结果</h3><p>高频出现的选题类型清单、开头句式清单、镜头切换频率统计、CTA 出现位置与原文。</p><div class="src">METHOD: 信息档案交叉比对</div></div>
-    <div class="card sc"><div class="no">03</div><h3>行动包</h3><p>脚本结构模板、候选选题清单、拍摄前 checklist。</p><div class="src">OUTPUT: 基于以上两部分生成</div></div>
-  </div>
-</section>
-
-<section id="quickstart">
-  <div class="sec-tag sc">03 / QUICKSTART</div>
-  <h2 class="sc">快速开始</h2>
-  <div class="term sc">
-    <div class="term-bar"><i class="dot"></i><i class="dot"></i><i class="dot"></i><span class="ttl">zsh — blogger-distiller</span></div>
-    <div class="term-body">
-      <span class="cm"># 依赖：Python 3.10+ · ffmpeg · Google Chrome（macOS 默认路径）</span><br>
-      git clone https://github.com/zou0613/blogger-distiller.git<br>
-      cd blogger-distiller<br>
-      pip3 install --user requests websockets<br>
-      brew install ffmpeg<br><br>
-      <span class="cm"># 火山方舟 API Key —— https://console.volcengine.com/ark</span><br>
-      <span class="pr">export</span> ARK_API_KEY=<span class="hl">&lt;你的 Key&gt;</span><br><br>
-      <span class="cm"># 30 秒冒烟测试</span><br>
-      python3 scripts/extract/dy_extract.py <span class="hl">"&lt;任一抖音分享链接&gt;"</span> -o /tmp/dy_smoke_test<br>
-      <span class="ok">✓ 解析到 aweme_id → 探针 206/x.xMB → 提取成功</span>&nbsp;&nbsp;<span class="cm"># 即环境就绪</span>
+<section class="hero">
+  <div class="hero-mark" aria-hidden="true">蒸</div>
+  <div class="wrap">
+    <div class="kick reveal d1">DOUYIN CREATOR REVERSE PIPELINE</div>
+    <h1 class="reveal d1">把一个博主，<br>蒸馏成<em>一份行动包</em></h1>
+    <p class="sub-en reveal d2">BLOGGER-DISTILLER</p>
+    <p class="lede reveal d3">抓取指定博主的爆款视频，用豆包视觉模型逐条拆解为带时间戳的信息档案，再交叉比对产出《蒸馏报告》。</p>
+    <div class="io reveal d4">
+      <div><span class="dotr"></span><span class="k">IN</span><span class="v"><b>博主主页链接</b>（批量 Top N）</span></div>
+      <div><span class="dotr"></span><span class="k">IN</span><span class="v"><b>单条视频分享链接</b></span></div>
+      <div><span class="k">OUT</span><span class="v"><b>distill_report.md</b></span></div>
     </div>
   </div>
 </section>
 
-<section id="tree">
-  <div class="sec-tag sc">04 / STRUCTURE</div>
-  <h2 class="sc">目录结构</h2>
-  <div class="tree sc">
-blogger-distiller/<br>
-├── SKILL.md                          <span class="cmt"># 四阶段编排说明 + 蒸馏方法论与写作纪律</span><br>
-├── scripts/<br>
-│&nbsp;&nbsp;&nbsp;├── download/<br>
-│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;├── dy_dl.py               <span class="cmt"># 单视频下载（headless Chrome CDP 拦截 + 自动校验）</span><br>
-│&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;└── dy_batch_top.py       <span class="cmt"># 批量下载（按点赞排序 Top N）</span><br>
-│&nbsp;&nbsp;&nbsp;└── extract/<br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── extract_video_info.py <span class="cmt"># 火山方舟 Responses API 多模态提取</span><br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├── dy_extract.py         <span class="cmt"># 直传优先提取入口（失败自动回退下载上传）</span><br>
-│&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└── prompt.txt            <span class="cmt"># 只提取不分析提示词（含输出排版规范 A-F）</span><br>
-└── references/<br>
-&nbsp;&nbsp;&nbsp;&nbsp;├── download-playbook.md          <span class="cmt"># 收片手册：修复闭环 · 压缩规则</span><br>
-&nbsp;&nbsp;&nbsp;&nbsp;└── extract-playbook.md           <span class="cmt"># 拆片手册：分段重跑 · 失败模式表</span>
+<main>
+
+<section id="pipeline">
+  <div class="wrap">
+    <div class="sec-head sc"><span class="sec-no">壹</span><span class="sec-title">流水线</span><span class="sec-note">COLLECT → EXTRACT → DISTILL</span></div>
+    <div class="steps sc">
+      <div class="step"><h3>收片</h3><p>全量作品元数据抓取；按点赞批量下载 Top N；ffprobe 质检、失败修复、大文件压缩闭环。</p><div class="io2">OUT ▸ videos/*.mp4 + meta.json</div></div>
+      <div class="step"><h3>拆片</h3><p>豆包视觉模型逐条提取 10 类信息档案——口播转写、字幕画面文字、镜头结构、品牌记录，全程带时间戳。支持直传优先：直链直接交方舟拉流，本地不落盘。</p><div class="io2">OUT ▸ 每条视频一份档案 .md</div></div>
+      <div class="step"><h3>蒸馏</h3><p>跨档案交叉比对：高频选题类型、开头句式清单、镜头切换频率统计、CTA 出现位置与原文。</p><div class="io2">RULE ▸ 只提取不分析 · 证据分级</div></div>
+      <div class="step"><h3>行动包</h3><p>脚本结构模板、候选选题清单、拍摄前 checklist——基于前两步生成，填空即可使用。</p><div class="io2">OUT ▸ distill_report.md</div></div>
+    </div>
+    <div class="pipe-note sc">支持两种链接输入：<b>主页链接</b> 与 <b>单条视频分享链接</b>（单条模式走直传，跳过收片层）。不支持按名字搜索，不支持图文作品。</div>
   </div>
 </section>
 
-<section id="redlines">
-  <div class="sec-tag sc">05 / GUARDRAILS</div>
-  <h2 class="sc">安全红线</h2>
-  <div class="redgrid">
-    <div class="red sc"><div class="no2">RULE 01</div><h4>无登录态下载</h4><p>headless Chrome 使用独立 profile，不含用户 cookie。</p></div>
-    <div class="red sc"><div class="no2">RULE 02</div><h4>只读浏览</h4><p>cookie 仅留在用户浏览器内做只读查询；禁止点赞/关注等写操作。</p></div>
-    <div class="red sc"><div class="no2">RULE 03</div><h4>Key 不落盘</h4><p>API Key 只进环境变量，绝不写入任何文件。</p></div>
-    <div class="red sc"><div class="no2">RULE 04</div><h4>零伪造</h4><p>所有结论必须溯源到真实提取结果或真实 API 返回。</p></div>
+<section id="report" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-head sc"><span class="sec-no">贰</span><span class="sec-title">《蒸馏报告》的构成</span><span class="sec-note">WHAT'S INSIDE</span></div>
+    <div class="rpt sc">
+      <div><span class="tag">PART Ⅰ</span><h3>事实基础</h3><p>各条视频的信息档案要点与 meta.json 的互动数据——发布时间、点赞、评论、收藏。</p><span class="from">来源 ▸ 模型真实提取结果</span></div>
+      <div><span class="tag">PART Ⅱ</span><h3>跨档案对比结果</h3><p>高频出现的选题类型、开头句式清单、镜头切换频率统计、CTA 出现位置与原文。</p><span class="from">方法 ▸ 信息档案交叉比对</span></div>
+      <div><span class="tag">PART Ⅲ</span><h3>行动包</h3><p>脚本结构模板、候选选题清单、拍摄前 checklist。</p><span class="from">生成 ▸ 基于以上两部分</span></div>
+    </div>
+  </div>
+</section>
+
+<section id="quickstart" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-head sc"><span class="sec-no">叁</span><span class="sec-title">快速开始</span><span class="sec-note">PYTHON 3.10+ · FFMPEG · CHROME</span></div>
+    <div class="qs-grid">
+      <div class="codeblock sc"><pre><span class="cm"># 克隆仓库</span>
+git clone https://github.com/zou0613/blogger-distiller.git
+cd blogger-distiller
+
+<span class="cm"># 依赖</span>
+pip3 install --user requests websockets
+brew install ffmpeg
+
+<span class="cm"># 火山方舟 API Key —— console.volcengine.com/ark</span>
+<span class="kw">export</span> ARK_API_KEY=<span class="st">&lt;你的 Key&gt;</span>
+
+<span class="cm"># 冒烟测试</span>
+python3 scripts/extract/dy_extract.py <span class="st">"&lt;任一抖音分享链接&gt;"</span> \
+  -o /tmp/dy_smoke_test
+<span class="cm"># ✓ 解析到 aweme_id → 探针 206/x.xMB → 提取成功</span></pre></div>
+      <ul class="side-list sc">
+        <li><span class="n">01</span><span>日志依次出现「解析到 aweme_id → 探针 206/xxMB → 提取成功」即环境就绪</span></li>
+        <li><span class="n">02</span><span>该命令默认走直传路径，视频在方舟侧拉流，本地不落盘；探针失败自动回退为下载后上传</span></li>
+        <li><span class="n">03</span><span>建议境内家庭/办公网络使用；海外或数据中心 IP 会显著提高风控概率</span></li>
+        <li><span class="n">04</span><span>批量规模建议 Top 3~5，每条约 4 分钟提取耗时</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section id="guards" style="padding-top:20px">
+  <div class="wrap">
+    <div class="sec-head sc"><span class="sec-no">肆</span><span class="sec-title">安全红线</span><span class="sec-note">HARD CONSTRAINTS</span></div>
+    <div class="guards">
+      <div class="guard sc"><span class="gno">RULE 01</span><h4>无登录态下载</h4><p>headless Chrome 使用独立 profile，不含用户 cookie。</p></div>
+      <div class="guard sc"><span class="gno">RULE 02</span><h4>只读浏览</h4><p>cookie 仅留在用户浏览器内做只读查询；禁止点赞/关注等写操作。</p></div>
+      <div class="guard sc"><span class="gno">RULE 03</span><h4>Key 不落盘</h4><p>API Key 只进环境变量，绝不写入任何文件。</p></div>
+      <div class="guard sc"><span class="gno">RULE 04</span><h4>零伪造</h4><p>所有结论必须溯源到真实提取结果或真实 API 返回。</p></div>
+    </div>
   </div>
 </section>
 
 </main>
 
 <footer>
-  <a href="https://github.com/zou0613/blogger-distiller">GitHub</a> ·
-  <a href="https://github.com/zou0613/blogger-distiller/blob/main/LICENSE">MIT License</a> ·
-  <a href="https://www.volcengine.com/docs/82379/1895586">火山方舟视频理解文档</a><br><br>
-  blogger-distiller — 收片 ▸ 拆片 ▸ 蒸馏 ▸ 行动包
+  <div class="foot-in">
+    <span>blogger-distiller — 收片 ▸ 拆片 ▸ 蒸馏 ▸ 行动包</span>
+    <span><a href="https://github.com/zou0613/blogger-distiller">GitHub</a>&nbsp;&nbsp;/&nbsp;&nbsp;<a href="https://github.com/zou0613/blogger-distiller/blob/main/LICENSE">MIT License</a>&nbsp;&nbsp;/&nbsp;&nbsp;<a href="https://www.volcengine.com/docs/82379/1895586">火山方舟文档</a></span>
+  </div>
 </footer>
 
 <script>
 document.documentElement.classList.add("js");
-var ck=document.getElementById("clock");
-if(!matchMedia("(prefers-reduced-motion:reduce)").matches){
-  setInterval(function(){ck.textContent=new Date().toTimeString().slice(0,8)},1000);
-}else{ck.textContent=""}
-var io=new IntersectionObserver(function(es){
-  es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("on");io.unobserve(e.target)}})
-},{threshold:.12});
+var p=document.getElementById("prog");
+addEventListener("scroll",function(){var h=document.documentElement;p.style.width=(h.scrollTop/(h.scrollHeight-h.clientHeight)*100)+"%"},{passive:true});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("on");io.unobserve(e.target)}})},{threshold:.12});
 document.querySelectorAll(".sc").forEach(function(el){io.observe(el)});
 </script>
 </body>
