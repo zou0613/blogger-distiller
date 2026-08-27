@@ -1,6 +1,6 @@
 # 收片手册（Download Playbook）
 
-> 内化自 douyin-downloader 的全部操作知识。执行收片阶段前必读。
+> 执行收片阶段前必读。
 
 ## 核心安全约束（必须遵守）
 
@@ -66,7 +66,7 @@
 
 注：`play_count` 在 web 端 API 恒为 0，属正常现象，不要伪造。
 
-**sec_uid 获取**：若用户只给博主名，导航到 `https://www.douyin.com/search/<博主名>?type=user`，snapshot 找到目标博主的 `douyin.com/user/<sec_uid>` 链接（注意核对粉丝数/简介避免重名）。
+**sec_uid 获取**：直接从用户提供的博主主页 URL 提取（形如 `douyin.com/user/<sec_uid>`）。本工具不做按名字搜索解析。
 
 **数据落地**：evaluate 拿到 JSON 后无法直接写文件（沙箱无 fs）。直接 `return JSON.stringify(...)`，大输出会截断并生成完整 log 文件（`/var/folders/.../evaluate-<时间戳>.log`），shell 复制该文件再用 Python 重写成标准格式。详见「元数据落盘」。**不要用 `<a download>` 或本地 HTTP server 接收（均实测失败）**。
 
@@ -106,7 +106,7 @@ rm <运行目录>/tmp_items.json
 
 **情形 B：输出未截断（无 log 路径，JSON 已完整进入对话上下文）**
 
-此时完整 JSON 就在 evaluate 的工具结果里，**直接用 Write 工具把 JSON 写到工作区**（注意 `/tmp` 等工作区外路径会被拒绝），再用 Python 验证 + 重写成标准格式。
+此时完整 JSON 就在 evaluate 的工具结果里，**直接将 JSON 内容保存为本地文件**，再用 Python 验证 + 重写成标准格式。
 
 若 JSON 过大写 Write 也吃力，改用分批策略：把 items 数组切片多次 evaluate，每次返回一段（控制每段 < 3 万字符），在 shell 端拼接。
 

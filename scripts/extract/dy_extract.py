@@ -20,8 +20,7 @@
 - 直传要求 ≤50MB 且支持匿名访问；上传上限 512MB，>512MB 回退时自动 ffmpeg 压缩
 - 直传不做抽帧预处理，--fps 仅对回退的上传路径生效；直传重跑无法复用 file_id
 
-依赖: requests、websockets、ffmpeg/ffprobe；dy_dl.py 已内置打包于本目录
-     （源自 douyin-downloader 技能，本技能自包含，可整目录拷贝迁移）
+依赖: requests、websockets、ffmpeg/ffprobe；dy_dl.py 随本仓库提供（scripts/download/）
 用法:
   export ARK_API_KEY=<你的key>
   python3 dy_extract.py "https://v.douyin.com/xxxx/" [-o 输出目录] [--fps 1.0]
@@ -63,17 +62,14 @@ def die(msg, code=1):
 
 
 def load_dy_module():
-    """定位并导入 dy_dl.py，支持三种目录布局：
+    """定位并导入 dy_dl.py，支持两种目录布局：
 
-    1. 平铺: 同技能 scripts/ 下与本脚本同级（ark-video-extractor 布局）
-    2. 上三角: ../download/dy_dl.py（blogger-distiller 的 download+extract 分层布局）
-    3. 历史兼容: 兄弟技能 douyin-downloader
+    1. 平铺: 与本脚本同目录
+    2. 上三角: ../download/dy_dl.py（download/ 与 extract/ 分层布局）
     """
     candidates = [
         os.path.join(SCRIPT_DIR, "dy_dl.py"),
         os.path.normpath(os.path.join(SCRIPT_DIR, "..", "download", "dy_dl.py")),
-        os.path.normpath(os.path.join(SCRIPT_DIR, "..", "..", "douyin-downloader", "scripts", "dy_dl.py")),
-        os.path.expanduser("~/Documents/自媒体/.trae/skills/douyin-downloader/scripts/dy_dl.py"),
     ]
     for f in candidates:
         if os.path.isfile(f):
@@ -82,7 +78,7 @@ def load_dy_module():
                 sys.path.insert(0, d)
             import dy_dl
             return dy_dl, d
-    die("未找到 dy_dl.py（内置副本 / 上三角 download 层 / 兄弟技能 douyin-downloader 均不存在）")
+    die("未找到 dy_dl.py（需与本脚本同目录，或位于 ../download/）")
 
 
 def cdp_port(cdp_http):
