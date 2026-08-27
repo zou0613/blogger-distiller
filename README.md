@@ -2,7 +2,11 @@
 
 # blogger-distiller · 博主蒸馏器
 
-抖音博主打法逆向分析工具：抓取指定博主的爆款视频，用豆包视觉模型逐条拆解为带时间戳的信息档案，交叉蒸馏出《蒸馏报告》——对方的商业打法。
+*> 把爆款"熬成"打法：一键抓取目标博主的爆款视频，逐条拆解成带时间戳的信息档案，交叉蒸馏出一份可复制的商业打法报告。*
+
+抖音博主打法逆向分析工具：无需登录，喂进一个博主主页链接，即可自动完成「下载 → 提取 → 蒸馏 → 出报告」全流程——从口播、画面、字幕到 CTA，把对方 3~5 条最火的视频拆成数据，提炼出流量天花板、钩子结构、变现路径和可直接照做的排片方案。
+
+> **核心卖点**：免下载直传 · 豆包视觉模型精细拆片 · 结构化信息档案 · 打法级蒸馏报告
 
 ![License](https://img.shields.io/badge/License-MIT-lightgrey) ![Platform](https://img.shields.io/badge/macOS-%E2%9C%93-black) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
 
@@ -23,14 +27,6 @@ brew install ffmpeg          # macOS
 # 火山方舟 API Key（用于调用豆包视觉模型）
 export ARK_API_KEY=<你的 Key>   # https://console.volcengine.com/ark 获取
 ```
-
-30 秒冒烟测试：
-
-```bash
-python3 scripts/extract/dy_extract.py "<任一抖音分享链接>" -o /tmp/dy_smoke_test
-```
-
-日志依次出现「解析到 aweme_id → 探针 206/xxMB → 提取成功」即环境就绪。该命令默认走直传路径（视频直链直接交给方舟拉流，本地不落盘）；失败会自动回退为下载后上传，无需人工干预。
 
 <details>
 <summary><b>输入要求与说明</b></summary>
