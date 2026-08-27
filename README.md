@@ -1,14 +1,29 @@
 <div align="center">
 
-# blogger-distiller · 博主蒸馏器
+# 🔬 blogger-distiller · 博主蒸馏器
 
-*> 把爆款"熬成"打法：一键抓取目标博主的爆款视频，逐条拆解成带时间戳的信息档案，交叉蒸馏出一份可复制的商业打法报告。*
+*> 把爆款"熬成"打法 —— 一键逆向复刻别人的流量密码。*
 
-抖音博主打法逆向分析工具：无需登录，喂进一个博主主页链接，即可自动完成「下载 → 提取 → 蒸馏 → 出报告」全流程——从口播、画面、字幕到 CTA，把对方 3~5 条最火的视频拆成数据，提炼出流量天花板、钩子结构、变现路径和可直接照做的排片方案。
+抖音博主打法逆向分析工具：抓取指定博主的爆款视频，用豆包视觉模型逐条拆解为带时间戳的信息档案，交叉蒸馏出《蒸馏报告》——对方的商业打法。
 
-> **核心卖点**：免下载直传 · 豆包视觉模型精细拆片 · 结构化信息档案 · 打法级蒸馏报告
+**核心能力**：免登录抓取爆款 · 直传免下载 · 豆包视觉精细拆片 · 打法级蒸馏报告
 
-![License](https://img.shields.io/badge/License-MIT-lightgrey) ![Platform](https://img.shields.io/badge/macOS-%E2%9C%93-black) ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
+<!-- 徽章组：输入 -->
+![输入](https://img.shields.io/badge/输入-博主主页链接-1D4ED8)
+![批量](https://img.shields.io/badge/批量-Top%20N-2563EB)
+![直传](https://img.shields.io/badge/直传-免下载优先-3B82F6)
+![回退](https://img.shields.io/badge/回退-自动下载上传-60A5FA)
+
+<!-- 徽章组：智能 -->
+![模型](https://img.shields.io/badge/模型-豆包视觉-0E7490)
+![拆片](https://img.shields.io/badge/拆片-10维信息档案-0891B2)
+![蒸馏](https://img.shields.io/badge/蒸馏-打法报告-06B6D4)
+![只提取](https://img.shields.io/badge/原则-只提取不分析-22D3EE)
+
+<!-- 徽章组：环境和许可 -->
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB)
+![macOS](https://img.shields.io/badge/macOS-%E2%9C%93-black)
+![License](https://img.shields.io/badge/License-MIT-lightgrey)
 
 </div>
 
